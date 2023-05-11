@@ -1,0 +1,2 @@
+Consider the asynchronous beaconing communication to occur through some kind of "contract" system, wherein both sides request certain information to be provided upon the next contact. This might be difficult to implement, but should allow for greater flexibility when expanding on the networking system in the future, as every additional protocol would only have to implement a slight modification of the contract to send over the network and the data would just have to be serialized into a different format and sent at different intervals.
+

@@ -1,10 +1,6 @@
-pub mod networkinterface;
-
+pub mod contract;
 pub mod parser;
-
-pub mod protocol;
-
+pub mod commandutils;
+pub mod netutils;
 pub mod queue;
-
-pub mod command_types;
-
+pub mod guidhandler;

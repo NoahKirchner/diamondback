@@ -3,43 +3,36 @@ use std::{sync::Arc, thread::sleep, time::Duration};
 
 #[path = "../../common/mod.rs"]
 mod common;
-use common::{*, 
-            networkinterface::*,
-            queue::*,
-            protocol::*,
-            parser::*,
-            command_types::*,
-            };
 
+use common::parser::*;
+use common::netutils::NetworkInterface;
+use common::queue::*;
 
 fn main() {
 
-    let parser = Parser::new();
-    let interface = NetworkInterface::new(("127.0.0.1".to_string(), "6960".to_string()), ("127.0.0.1".to_string(), "6900".to_string()));
+    let parser = Parser::new("test".to_string());
+    let mut interface = NetworkInterface::new();
+    
+    interface.create_listener("127.0.0.1:6968".to_string());
+    interface.create_stream("127.0.0.1:6969".to_string());
 
-    let inbound_queue = Arc::new(Queue::<Packet>::new());
-    let outbound_queue = Arc::new(Queue::<Packet>::new());
-
-    listen_thread(&interface, &inbound_queue);
-    send_thread(&interface, &outbound_queue);
-
-    outbound_queue.push(parser.new_guid_post("127.0.0.1,6960".to_string()));
+  // mfer we dealing with guid sync later you dig??  
+//    outbound_queue.push(parser.new_guid_post("127.0.0.1,6960".to_string()));
 
 
     loop {
-        sleep(Duration::new(0,50000));
-        if inbound_queue.is_empty() {
+        sleep(Duration::new(5,50000));
+        if interface.inbound_queue.is_empty() {
             continue;
         }
         else {
-            let inbound_packet = parser.ingest_payload(inbound_queue.pop());
-            let destination_guid = inbound_packet.0;                        
-            let payload = inbound_packet.2;
-
-            let command:CommandEnum = Parser::deserialize_payload(payload);
-            
-            let response = command.execute();
-            outbound_queue.push(parser.new_response(destination_guid, response));
+            let parse_response = parser.parse(interface.inbound_queue.pop());
+            match parse_response {
+                
+                ParsedValue::ParsedResponse { result, source} => {println!("HUH??")},
+                ParsedValue::ParsedCommand { response } => {interface.outbound_queue.push(("TESTFIXMEEE".to_string(),response.clone()))}
+                ParsedValue::Other => todo!()
+            }
         }
     }
 

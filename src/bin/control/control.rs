@@ -3,37 +3,41 @@ mod common;
 use std::{collections::HashMap, sync::Arc, thread::sleep, time::Duration};
 
 use common::{
-    networkinterface::*,
+    netutils::*,
     queue::*,
-    protocol::*,
+    contract::*,
+    guidhandler::*,
 };
 
-mod guid_handler;
-use guid_handler::*;
 
 fn main(){
-    let debug_source = ("127.0.0.1".to_string(), 6900.to_string());
-    let debug_destination = ("127.0.0.1".to_string(), 5959.to_string());
-    let inbound_interface = NetworkInterface::new(debug_source.clone(), debug_destination.clone());
+    let mut interface = NetworkInterface::new();
+    let mut guid_handler = RelayGuidHandler::new(interface);
+    let listener = guid_handler.interface.create_listener("127.0.0.1:6969".to_string());
 
-    let mut outbound_interface = NetworkInterface::new(debug_source, debug_destination);
 
-    let inbound_queue = Arc::new(Queue::<Packet>::new());
-    let outbound_queue = Arc::new(Queue::<Packet>::new());
-
-    listen_thread(&inbound_interface, &inbound_queue);
-    let mut control_handler = ControlHandler::new();
 
     loop {
-        sleep(Duration::new(0,50000));
-        if inbound_queue.is_empty() {
+        sleep(Duration::new(5,50000));
+        if guid_handler.interface.inbound_queue.is_empty(){
+            println!("Inbound queue empty");
             continue;
         }
         else {
-            // definitely clean this up, but should be a decent for testing
-            let transit_packet = inbound_queue.pop();
-            control_handler.analyze(transit_packet, &mut outbound_interface);
+            println!("Guid handler analyzing");
+            guid_handler.analyze(&guid_handler.interface.inbound_queue.pop());
+            println!("NEW GUID TABLE!!!! {:?}", guid_handler);
         }
-    }
+        match &guid_handler.interface.outbound_queue.is_empty(){
+            &_False => {
+                    println!("True match on the outbound queue my brother");
+                    let rhost = guid_handler.interface.outbound_queue.peek().0.clone();
+                    guid_handler.interface.create_stream(rhost.clone());
+                    guid_handler.interface.join_stream(rhost.clone());
+            }
+            &_True => {continue;}
+        }
+
+}
 }
 

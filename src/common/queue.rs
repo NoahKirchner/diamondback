@@ -26,6 +26,9 @@ pub trait QueueMethods<T>{
     // an empty item.
     fn pop (&self)->T;
 
+    // Allows you to peek at an item instead of popping it for analysis.
+    fn peek(&self)->T;
+
     // Number of elements in the queue
     fn length(&self)->usize;
 
@@ -33,7 +36,7 @@ pub trait QueueMethods<T>{
     fn is_empty(&self)->bool;
 
 }
-
+#[derive(Debug)]
 pub struct Queue<T> {
     // Allows easy checking of the queue so you don't
     // have to call length every time. Using this over
@@ -44,7 +47,7 @@ pub struct Queue<T> {
     
 }
 
-impl<T> QueueMethods<T> for Queue<T> {
+impl<T: Clone> QueueMethods<T> for Queue<T> {
 
     fn new()-> Self{
         Self {
@@ -76,6 +79,15 @@ impl<T> QueueMethods<T> for Queue<T> {
                 .expect("Queue Failed pop after lock secured, return value was empty.
                 Issue with empty check.");
 
+    }
+
+    fn peek(&self)->T{
+        let mut data = self.data.lock().expect("Queue lock failed on peek");
+    
+        while data.is_empty(){
+            data = self.condition.wait(data).expect("Queue failed condition check");
+        }
+        return data.get(0).unwrap().clone();
     }
 
     fn length(&self)->usize{
